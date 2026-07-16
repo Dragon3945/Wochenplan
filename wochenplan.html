@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>Wochenplan</title>
+<style>
+  :root {
+    --bg: #f7f6f3;
+    --card: #ffffff;
+    --border: #e4e1d8;
+    --ink: #23221f;
+    --muted: #85817a;
+    --purple: #7f77dd; --purple-bg: #eeedfe; --purple-tx: #3c3489;
+    --coral: #d85a30; --coral-bg: #faece7; --coral-tx: #993c1d;
+    --teal: #1d9e75; --teal-bg: #e1f5ee; --teal-tx: #0f6e56;
+    --pink: #d4537e; --pink-bg: #fbeaf0; --pink-tx: #993556;
+    --gray: #888780; --gray-bg: #f1efe8; --gray-tx: #444441;
+    --blue: #378add; --blue-bg: #e6f1fb; --blue-tx: #185fa5;
+    --amber: #c98a1f; --amber-bg: #faf1e0; --amber-tx: #8a5f10;
+    --indigo: #5b5fc7; --indigo-bg: #ecebfa; --indigo-tx: #3a3d94;
+    --green: #2f9e58; --red: #d1553f; --yellow: #dba32b; --slate: #b9b6ac;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 60px;
+    background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 2px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+  .tab-btn {
+    background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    font-size: 13px; font-weight: 500; padding: 8px 14px; border-radius: 9px; cursor: pointer;
+  }
+  .tab-btn.active { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .progress-row { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+  .progress-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--teal); width: 0%; transition: width .3s; }
+  .progress-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .day-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px;
+  }
+  .day-title {
+    font-size: 14px; font-weight: 600; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .day-title span.count { font-size: 11px; color: var(--muted); font-weight: 400; }
+  .item {
+    display: flex; align-items: flex-start; gap: 8px;
+    padding: 7px 8px; border-radius: 8px; margin-bottom: 6px;
+    cursor: pointer; user-select: none; transition: opacity .15s;
+  }
+  .item input { margin-top: 2px; width: 16px; height: 16px; cursor: pointer; flex-shrink: 0; }
+  .item.done { opacity: 0.45; }
+  .item.done .label { text-decoration: line-through; }
+  .item .text { display: flex; flex-direction: column; line-height: 1.25; }
+  .item .label { font-size: 13px; font-weight: 500; }
+  .item .time { font-size: 11px; opacity: 0.85; }
+  .cat-morgen { background: var(--amber-bg); } .cat-morgen .label,.cat-morgen .time{ color: var(--amber-tx); }
+  .cat-lernen { background: var(--purple-bg); } .cat-lernen .label,.cat-lernen .time{ color: var(--purple-tx); }
+  .cat-gym { background: var(--coral-bg); } .cat-gym .label,.cat-gym .time{ color: var(--coral-tx); }
+  .cat-fussball { background: var(--teal-bg); } .cat-fussball .label,.cat-fussball .time{ color: var(--teal-tx); }
+  .cat-klarinette { background: var(--pink-bg); } .cat-klarinette .label,.cat-klarinette .time{ color: var(--pink-tx); }
+  .cat-essen { background: var(--gray-bg); } .cat-essen .label,.cat-essen .time{ color: var(--gray-tx); }
+  .cat-schlaf { background: var(--blue-bg); } .cat-schlaf .label,.cat-schlaf .time{ color: var(--blue-tx); }
+  .cat-bettfertig { background: var(--indigo-bg); } .cat-bettfertig .label,.cat-bettfertig .time{ color: var(--indigo-tx); }
+  .footer-row { margin-top: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+  button.reset {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    font-size: 12px; padding: 7px 12px; border-radius: 8px; cursor: pointer;
+  }
+  button.reset:hover { background: var(--card); color: var(--ink); }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+  /* History page */
+  #historyPage { display: none; }
+  .history-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+  }
+  .history-grid { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
+  .week-box {
+    width: 46px; height: 46px; border-radius: 9px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #fff;
+  }
+  .week-box .wk { font-size: 9px; font-weight: 500; opacity: .85; }
+  .box-green { background: var(--green); }
+  .box-yellow { background: var(--yellow); }
+  .box-red { background: var(--red); }
+  .box-empty { background: var(--slate); color: var(--ink); opacity: .5; }
+  .history-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+  .history-legend span { display: flex; align-items: center; gap: 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Wochenplan</h1>
+  <p class="sub">Tippe einen Termin an, um ihn abzuhaken. Setzt sich jede Woche automatisch zurück.</p>
+
+  <div class="tabs">
+    <button class="tab-btn" id="tabDay">Heute</button>
+    <button class="tab-btn active" id="tabWeek">Diese Woche</button>
+    <button class="tab-btn" id="tabHistory">Verlauf</button>
+  </div>
+
+  <div id="dayPage" style="display:none;">
+    <div class="progress-row">
+      <div class="progress-bar"><div class="progress-fill" id="dayProgressFill"></div></div>
+      <div class="progress-label" id="dayProgressLabel">0 / 0 erledigt</div>
+    </div>
+    <div class="days" id="dayContainer"></div>
+    <div class="footer-row">
+      <div class="legend">
+        <span><span class="dot" style="background:var(--amber)"></span>Morgenroutine</span>
+        <span><span class="dot" style="background:var(--indigo)"></span>Bettfertig machen</span>
+        <span><span class="dot" style="background:var(--blue)"></span>Schlaf</span>
+        <span><span class="dot" style="background:var(--purple)"></span>Lernen</span>
+        <span><span class="dot" style="background:var(--coral)"></span>Gym</span>
+        <span><span class="dot" style="background:var(--teal)"></span>Fußball</span>
+        <span><span class="dot" style="background:var(--pink)"></span>Klarinette</span>
+        <span><span class="dot" style="background:var(--gray)"></span>Essen</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="weekPage">
+    <div class="progress-row">
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-label" id="progressLabel">0 / 0 erledigt</div>
+    </div>
+
+    <div class="days" id="days"></div>
+
+    <div class="footer-row">
+      <div class="legend">
+        <span><span class="dot" style="background:var(--amber)"></span>Morgenroutine</span>
+        <span><span class="dot" style="background:var(--indigo)"></span>Bettfertig machen</span>
+        <span><span class="dot" style="background:var(--blue)"></span>Schlaf</span>
+        <span><span class="dot" style="background:var(--purple)"></span>Lernen</span>
+        <span><span class="dot" style="background:var(--coral)"></span>Gym</span>
+        <span><span class="dot" style="background:var(--teal)"></span>Fußball</span>
+        <span><span class="dot" style="background:var(--pink)"></span>Klarinette</span>
+        <span><span class="dot" style="background:var(--gray)"></span>Essen</span>
+      </div>
+      <button class="reset" id="resetBtn">Diese Woche zurücksetzen</button>
+    </div>
+  </div>
+
+  <div id="historyPage">
+    <div class="history-card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:2px;">Wochen-Verlauf</div>
+      <div style="font-size:12px;color:var(--muted);">Zeigt, wie viel Prozent deiner Termine du pro Woche geschafft hast.</div>
+      <div class="history-grid" id="historyGrid"></div>
+      <div class="history-legend">
+        <span><span class="dot box-green" style="width:12px;height:12px;border-radius:4px;"></span>90–100% geschafft</span>
+        <span><span class="dot box-yellow" style="width:12px;height:12px;border-radius:4px;"></span>50–89% geschafft</span>
+        <span><span class="dot box-red" style="width:12px;height:12px;border-radius:4px;"></span>unter 50%</span>
+        <span><span class="dot box-empty" style="width:12px;height:12px;border-radius:4px;"></span>keine Daten</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PLAN = {
+  "Montag": [
+    { id: "mo-aufstehen", cat: "morgen", label: "Aufstehen", time: "9:30" },
+    { id: "mo-morgenroutine", cat: "morgen", label: "Morgenroutine: Wasser trinken, kurz strecken, Bett machen", time: "9:30 – 9:45" },
+    { id: "mo-lernen", cat: "lernen", label: "Lernen: Investieren", time: "10:30 – 11:30" },
+    { id: "mo-essen1", cat: "essen", label: "Mittagessen", time: "12:00 – 13:00" },
+    { id: "mo-gym", cat: "gym", label: "Gym – Push", time: "14:00 – 16:00" },
+    { id: "mo-essen2", cat: "essen", label: "Abendessen", time: "19:30 – 20:30" },
+    { id: "mo-bettfertig", cat: "bettfertig", label: "Bettfertig machen", time: "00:45 – 01:45" },
+    { id: "mo-schlaf", cat: "schlaf", label: "Ins Bett", time: "ab 01:45" }
+  ],
+  "Dienstag": [
+    { id: "di-aufstehen", cat: "morgen", label: "Aufstehen", time: "9:30" },
+    { id: "di-morgenroutine", cat: "morgen", label: "Morgenroutine: Wasser trinken, kurz strecken, Bett machen", time: "9:30 – 9:45" },
+    { id: "di-lernen", cat: "lernen", label: "Lernen: Psychologie", time: "10:30 – 11:30" },
+    { id: "di-essen1", cat: "essen", label: "Mittagessen", time: "12:00 – 13:00" },
+    { id: "di-essen2", cat: "essen", label: "Abendessen", time: "19:30 – 20:30" },
+    { id: "di-klarinette", cat: "klarinette", label: "Klarinette (alle 2 Wochen)", time: "20:00 – 21:00" },
+    { id: "di-bettfertig", cat: "bettfertig", label: "Bettfertig machen", time: "00:45 – 01:45" },
+    { id: "di-schlaf", cat: "schlaf", label: "Ins Bett", time: "ab 01:45" }
+  ],
+  "Mittwoch": [
+    { id: "mi-aufstehen", cat: "morgen", label: "Aufstehen", time: "9:30" },
+    { id: "mi-morgenroutine", cat: "morgen", label: "Morgenroutine: Wasser trinken, kurz strecken, Bett machen", time: "9:30 – 9:45" },
+    { id: "mi-klarinette", cat: "klarinette", label: "Klarinette", time: "16:45 – 17:15" },
+    { id: "mi-essen", cat: "essen", label: "Essen (früher, vor Fußball)", time: "18:30 – 19:00" },
+    { id: "mi-fussball", cat: "fussball", label: "Fußball", time: "20:00 – 22:00" },
+    { id: "mi-bettfertig", cat: "bettfertig", label: "Bettfertig machen", time: "00:45 – 01:45" },
+    { id: "mi-schlaf", cat: "schlaf", label: "Ins Bett", time: "ab 01:45" }
+  ],
+  "Donnerstag": [
+    { id: "do-aufstehen", cat: "morgen", label: "Aufstehen", time: "9:30" },
+    { id: "do-morgenroutine", cat: "morgen", label: "Morgenroutine: Wasser trinken, kurz strecken, Bett machen", time: "9:30 – 9:45" },
+    { id: "do-lernen", cat: "lernen", label: "Lernen: Investieren", time: "10:30 – 11:30" },
+    { id: "do-essen1", cat: "essen", label: "Mittagessen", time: "12:00 – 13:00" },
+    { id: "do-gym", cat: "gym", label: "Gym – Pull", time: "14:00 – 16:00" },
+    { id: "do-essen2", cat: "essen", label: "Abendessen", time: "19:30 – 20:30" },
+    { id: "do-bettfertig", cat: "bettfertig", label: "Bettfertig machen", time: "00:45 – 01:45" },
+    { id: "do-schlaf", cat: "schlaf", label: "Ins Bett", time: "ab 01:45" }
+  ],
+  "Freitag": [
+    { id: "fr-aufstehen", cat: "morgen", label: "Aufstehen", time: "9:30" },
+    { id: "fr-morgenroutine", cat: "morgen", label: "Morgenroutine: Wasser trinken, kurz strecken, Bett machen", time: "9:30 – 9:45" },
+    { id: "fr-essen", cat: "essen", label: "Essen (früher, vor Fußball)", time: "18:30 – 19:00" },
+    { id: "fr-fussball", cat: "fussball", label: "Fußball", time: "19:30 – 21:30" },
+    { id: "fr-bettfertig", cat: "bettfertig", label: "Bettfertig machen", time: "01:30 – 02:30" },
+    { id: "fr-schlaf", cat: "schlaf", label: "Ins Bett", time: "ab 02:30" }
+  ],
+  "Samstag": [
+    { id: "sa-aufstehen", cat: "morgen", label: "Aufstehen (ausschlafen)", time: "10:30" },
+    { id: "sa-morgenroutine", cat: "morgen", label: "Morgenroutine: Wasser trinken, kurz strecken", time: "10:30 – 10:45" },
+    { id: "sa-gym", cat: "gym", label: "Gym – Push (optional)", time: "14:00 – 16:00" },
+    { id: "sa-essen", cat: "essen", label: "Abendessen", time: "19:30 – 20:30" },
+    { id: "sa-bettfertig", cat: "bettfertig", label: "Bettfertig machen", time: "01:30 – 02:30" },
+    { id: "sa-schlaf", cat: "schlaf", label: "Ins Bett", time: "ab 02:30" }
+  ],
+  "Sonntag": [
+    { id: "so-aufstehen", cat: "morgen", label: "Aufstehen", time: "10:00" },
+    { id: "so-morgenroutine", cat: "morgen", label: "Morgenroutine: Wasser trinken, kurz strecken", time: "10:00 – 10:15" },
+    { id: "so-lernen", cat: "lernen", label: "Lernen: Psychologie (locker) + Rückblick", time: "11:00 – 12:00" },
+    { id: "so-essen1", cat: "essen", label: "Mittagessen", time: "12:30 – 13:30" },
+    { id: "so-essen2", cat: "essen", label: "Abendessen", time: "19:30 – 20:30" },
+    { id: "so-bettfertig", cat: "bettfertig", label: "Bettfertig machen", time: "00:45 – 01:45" },
+    { id: "so-schlaf", cat: "schlaf", label: "Ins Bett", time: "ab 01:45" }
+  ]
+};
+
+function getWeekInfo() {
+  const d = new Date();
+  const onejan = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+  return { key: "wochenplan-checks-" + d.getFullYear() + "-w" + week, label: "KW " + week, year: d.getFullYear(), week: week };
+}
+
+let state = {};
+const weekInfo = getWeekInfo();
+const storageKey = weekInfo.key;
+const HISTORY_KEY = "wochenplan-history";
+
+async function loadState() {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    state = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    state = {};
+  }
+  render();
+}
+
+async function saveState() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  } catch (e) {
+    console.error("Speichern fehlgeschlagen", e);
+  }
+  updateHistory();
+}
+
+async function updateHistory() {
+  let total = 0, done = 0;
+  Object.values(PLAN).forEach(items => {
+    total += items.length;
+    done += items.filter(it => state[it.id]).length;
+  });
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  let history = [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    history = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    history = [];
+  }
+  const idx = history.findIndex(h => h.key === storageKey);
+  const entry = { key: storageKey, label: weekInfo.label, year: weekInfo.year, week: weekInfo.week, done, total, pct };
+  if (idx >= 0) history[idx] = entry; else history.push(entry);
+  history.sort((a, b) => (a.year - b.year) || (a.week - b.week));
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error("Verlauf speichern fehlgeschlagen", e);
+  }
+}
+
+function render() {
+  const daysEl = document.getElementById("days");
+  daysEl.innerHTML = "";
+  let total = 0, done = 0;
+
+  Object.keys(PLAN).forEach(day => {
+    const items = PLAN[day];
+    const card = document.createElement("div");
+    card.className = "day-card";
+
+    const doneCount = items.filter(it => state[it.id]).length;
+    total += items.length;
+    done += doneCount;
+
+    const title = document.createElement("div");
+    title.className = "day-title";
+    title.innerHTML = `<span>${day}</span><span class="count">${doneCount}/${items.length}</span>`;
+    card.appendChild(title);
+
+    items.forEach(it => {
+      const row = document.createElement("label");
+      row.className = "item cat-" + it.cat + (state[it.id] ? " done" : "");
+      row.innerHTML = `
+        <input type="checkbox" ${state[it.id] ? "checked" : ""} data-id="${it.id}">
+        <span class="text"><span class="label">${it.label}</span><span class="time">${it.time}</span></span>
+      `;
+      row.querySelector("input").addEventListener("change", e => {
+        state[it.id] = e.target.checked;
+        saveState();
+        render();
+      });
+      card.appendChild(row);
+    });
+
+    daysEl.appendChild(card);
+  });
+
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressLabel").textContent = done + " / " + total + " erledigt";
+}
+
+const DAY_NAMES = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+
+function renderDay() {
+  const today = DAY_NAMES[new Date().getDay()];
+  const container = document.getElementById("dayContainer");
+  container.innerHTML = "";
+
+  const items = PLAN[today] || [];
+  const card = document.createElement("div");
+  card.className = "day-card";
+  card.style.gridColumn = "1 / -1";
+
+  const doneCount = items.filter(it => state[it.id]).length;
+
+  const title = document.createElement("div");
+  title.className = "day-title";
+  title.innerHTML = `<span>${today}</span><span class="count">${doneCount}/${items.length}</span>`;
+  card.appendChild(title);
+
+  items.forEach(it => {
+    const row = document.createElement("label");
+    row.className = "item cat-" + it.cat + (state[it.id] ? " done" : "");
+    row.innerHTML = `
+      <input type="checkbox" ${state[it.id] ? "checked" : ""} data-id="${it.id}">
+      <span class="text"><span class="label">${it.label}</span><span class="time">${it.time}</span></span>
+    `;
+    row.querySelector("input").addEventListener("change", e => {
+      state[it.id] = e.target.checked;
+      saveState();
+      render();
+      renderDay();
+    });
+    card.appendChild(row);
+  });
+
+  container.appendChild(card);
+
+  const pct = items.length ? Math.round((doneCount / items.length) * 100) : 0;
+  document.getElementById("dayProgressFill").style.width = pct + "%";
+  document.getElementById("dayProgressLabel").textContent = doneCount + " / " + items.length + " erledigt";
+}
+
+async function renderHistory() {
+  const grid = document.getElementById("historyGrid");
+  grid.innerHTML = "";
+  let history = [];
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    history = raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    history = [];
+  }
+  const map = {};
+  history.forEach(h => { map[h.key] = h; });
+
+  // letzte 10 Wochen inkl. aktueller Woche anzeigen
+  const boxes = [];
+  for (let i = 9; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i * 7);
+    const onejan = new Date(d.getFullYear(), 0, 1);
+    const wk = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+    const key = "wochenplan-checks-" + d.getFullYear() + "-w" + wk;
+    boxes.push(map[key] || { key, label: "KW " + wk, pct: null });
+  }
+
+  boxes.forEach(b => {
+    const box = document.createElement("div");
+    let cls = "box-empty", txt = "–";
+    if (b.pct !== null && b.pct !== undefined) {
+      txt = b.pct + "%";
+      if (b.pct >= 90) cls = "box-green";
+      else if (b.pct >= 50) cls = "box-yellow";
+      else cls = "box-red";
+    }
+    box.className = "week-box " + cls;
+    box.title = b.label + (b.total ? (": " + b.done + "/" + b.total + " erledigt") : ": keine Daten");
+    box.innerHTML = `<div>${txt}</div><div class="wk">${b.label.replace("KW ", "")}</div>`;
+    grid.appendChild(box);
+  });
+}
+
+document.getElementById("resetBtn").addEventListener("click", async () => {
+  state = {};
+  await saveState();
+  render();
+});
+
+function setActiveTab(tab) {
+  document.getElementById("tabDay").classList.toggle("active", tab === "day");
+  document.getElementById("tabWeek").classList.toggle("active", tab === "week");
+  document.getElementById("tabHistory").classList.toggle("active", tab === "history");
+  document.getElementById("dayPage").style.display = tab === "day" ? "block" : "none";
+  document.getElementById("weekPage").style.display = tab === "week" ? "block" : "none";
+  document.getElementById("historyPage").style.display = tab === "history" ? "block" : "none";
+}
+
+document.getElementById("tabDay").addEventListener("click", () => {
+  setActiveTab("day");
+  renderDay();
+});
+
+document.getElementById("tabWeek").addEventListener("click", () => {
+  setActiveTab("week");
+});
+
+document.getElementById("tabHistory").addEventListener("click", () => {
+  setActiveTab("history");
+  renderHistory();
+});
+
+loadState().then(() => renderDay());
+</script>
+</body>
+</html>
